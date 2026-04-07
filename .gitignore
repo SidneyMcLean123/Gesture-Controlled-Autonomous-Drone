@@ -1,0 +1,11 @@
+gesture-env/ 
+venv/
+__pycache__/
+*.pyc
+*.pkl
+*.h5
+*.keras
+.env
+base_frame.jpg
+landmark_frame.jpg
+raw_gesture_data.csv
