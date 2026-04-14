@@ -8,9 +8,8 @@ from dronekit import connect, VehicleMode
 import time
 import control
 import decision
-
-# from decision import MIN_FRAMES_BEFORE_DECISION, GESTURE_BUFFER_LEN, GESTURE_BUFFER_CONFIDENCE_THRESHOLD, gesture_buffer, get_stable_gesture, update_state
-# from control import arm_and_takeoff, land_and_disarm, hover_and_switch
+import threading
+from enum import Enum
 
 # SITL setup
 #############################################
@@ -19,17 +18,54 @@ vehicle = connect('udp:0.0.0.0:14552', wait_ready=True)
 print("Connected!")
 #############################################
 
-# decision layer setup
-state = "LANDED"
-last_gesture = None
-last_command = None
+# State Machine setup
+class State(Enum):
+    IDLE = 0
+    TAKEOFF = 1
+    HOVER = 2
+    LAND = 3
+    EMERGENCY_STOP = 4
 
-# map gestures to intents
-GESTURE_TO_INTENT = {
-    "open_palm" : "HOVER",
-    "closed_fist" : "LAND",
-    "point_up" : "TAKEOFF"
-}
+state = State.IDLE
+state_lock = threading.Lock()
+
+def set_state(new_state):
+    global state
+    with state_lock:
+        if state != new_state:
+            print(f"STATE CHANGE: {state.name} → {new_state.name}")
+            state = new_state
+
+def get_state():
+    with state_lock:
+        return state
+
+# Control Layer setup
+takeoff_started = False
+target_altitude = 10
+
+def control_loop(vehicle):
+    global state
+    
+    while True:
+        if state == State.TAKEOFF:
+            control.handle_takeoff(vehicle)
+
+        elif state == State.HOVER:
+            control.handle_hover(vehicle)
+
+        elif state == State.LAND:
+            control.handle_land(vehicle)
+
+        elif state == State.EMERGENCY_STOP:
+            control.handle_emergency(vehicle)
+
+        time.sleep(0.1)  # important: don't max CPU
+
+threading.Thread(target=control_loop, args=(vehicle,), daemon=True).start()
+
+# perception layer setup
+last_gesture = None
     
 # load model and encoder
 model = tf.keras.models.load_model("gesture_model.keras", compile=False)
@@ -47,7 +83,6 @@ mp_hands = mp.solutions.hands
 hand = mp_hands.Hands()
 
 while True:
-    command = None
     success, frame = cap.read()
     if not success:
         break
@@ -74,30 +109,24 @@ while True:
 
         label = encoder.inverse_transform([class_id])[0]
         
-        # Decision/Control Layer
-        decision.gesture_buffer.append(label)
-        gesture = decision.get_stable_gesture()
+        # Decision Layer
+        decision.add_gesture(label)
+        gesture = decision.get_gesture()
         
         if gesture and gesture != last_gesture:
-            intent = GESTURE_TO_INTENT.get(gesture)
-            state, command = decision.update_state(state, intent)
+            intent = decision.GESTURE_TO_STATE.get(gesture)
+
+            if intent == "TAKEOFF":
+                decision.update_state(State.TAKEOFF)
+            elif intent == "HOVER":
+                decision.update_state(State.HOVER)
+            elif intent == "LAND":
+                decision.update_state(State.LAND)
+
             last_gesture = gesture
-
-        if command and command != last_command:
-            print(f"Executing: {command}")
-
-            if command == "TAKEOFF":
-                control.arm_and_takeoff(vehicle, 5)
-    
-            elif command == "LAND":
-                control.land_and_disarm(vehicle)
-
-            elif command == "HOVER":
-                control.hover_and_switch(vehicle,10)
-                
-            last_command = command
         
-        cv2.putText(frame, f"{gesture} | {state}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
+        # display
+        cv2.putText(frame, f"{gesture} | {state.name}", (50, 100), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
         cv2.putText(frame, label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
     cv2.imshow("Camera Test", frame)
@@ -106,11 +135,6 @@ while True:
 
     if key == ord('q'):
         break
-
-    if key == ord(' '):
-        BGR_frame = cv2.cvtColor(RGB_frame, cv2.COLOR_RGB2BGR)
-        cv2.imwrite('base_frame.jpg', BGR_frame)
-        cv2.imwrite('landmark_frame.jpg', frame)
 
 cap.release()
 cv2.destroyAllWindows()
