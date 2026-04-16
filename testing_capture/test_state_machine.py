@@ -129,56 +129,80 @@ def test_invalid_intent_does_not_change_state_in_EMERGENCY_STOP_from_LAND(sm):
     assert sm.get_state() == State.EMERGENCY_STOP
     
 # Invalid transitions
-def test_cannot_hover_from_idle(sm):
+def test_cannot_hover_from_idle_returns_None(sm):
     result = sm.transition("HOVER")
     assert result is None
-    assert sm.get_state() == State.IDLE  # state unchanged
+    
+def test_cannot_hover_from_idle_does_change_state(sm):
+    result = sm.transition("HOVER")
+    assert sm.get_state() == State.IDLE  # state unchanged   
 
-def test_cannot_land_from_idle(sm):
+def test_cannot_land_from_idle_returns_None(sm):
     result = sm.transition("LAND")
     assert result is None
-    assert sm.get_state() == State.IDLE
+    
+def test_cannot_land_from_idle_does_not_change_state(sm):
+    result = sm.transition("LAND")
+    assert sm.get_state() == State.IDLE   
 
-def test_cannot_land_from_takeoff(sm):
-    sm.transition("TAKEOFF")
+def test_cannot_land_from_takeoff_returns_None(sm):
+    got_to_state(sm, "TAKEOFF")
     result = sm.transition("LAND")
     assert result is None
+    
+def test_cannot_land_from_takeoff_does_not_change_state(sm):
+    got_to_state(sm, "TAKEOFF")
+    result = sm.transition("LAND")
     assert sm.get_state() == State.TAKEOFF
 
-def test_cannot_idle_from_takeoff(sm):
-    sm.transition("TAKEOFF")
+def test_cannot_idle_from_takeoff_returns_None(sm):
+    got_to_state(sm, "TAKEOFF")
     result = sm.transition("IDLE")
     assert result is None
+    
+def test_cannot_idle_from_takeoff_does_not_change_state(sm):
+    got_to_state(sm, "TAKEOFF")
+    result = sm.transition("IDLE")
     assert sm.get_state() == State.TAKEOFF
-    
-def test_cannot_idle_from_hover(sm):
-    sm.transition("TAKEOFF")
-    sm.transition("HOVER")
+
+def test_cannot_idle_from_hover_returns_None(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER")
     result = sm.transition("IDLE")
     assert result is None
-    assert sm.get_state() == State.HOVER
     
-def test_cannot_takeoff_from_hover(sm):
-    sm.transition("TAKEOFF")
-    sm.transition("HOVER")
+def test_cannot_idle_from_hover_does_not_change_state(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER")
+    result = sm.transition("IDLE")
+    assert sm.get_state() == State.HOVER
+
+def test_cannot_takeoff_from_hover_returns_None(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER")
     result = sm.transition("TAKEOFF")
     assert result is None
+    
+def test_cannot_takeoff_from_hover_does_not_change_state(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER")
+    result = sm.transition("TAKEOFF")
     assert sm.get_state() == State.HOVER
     
-def test_cannot_takeoff_from_land(sm):
-    sm.transition("TAKEOFF")
-    sm.transition("HOVER")
-    sm.transition("LAND")
+def test_cannot_takeoff_from_land_returns_None(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER", "LAND")
     result = sm.transition("TAKEOFF")
     assert result is None
+    
+def test_cannot_takeoff_from_land_does_not_change_state(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER", "LAND")
+    result = sm.transition("TAKEOFF")
     assert sm.get_state() == State.LAND
-    
-def test_cannot_hover_from_land(sm):
-    sm.transition("TAKEOFF")
-    sm.transition("HOVER")
-    sm.transition("LAND")
+
+def test_cannot_hover_from_land_returns_None(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER", "LAND")
     result = sm.transition("HOVER")
     assert result is None
+    
+def test_cannot_hover_from_land_does_not_change_state(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER", "LAND")
+    result = sm.transition("HOVER")
     assert sm.get_state() == State.LAND
 
 def test_cannot_transition_to_idle_from_emergency_stop(sm):
