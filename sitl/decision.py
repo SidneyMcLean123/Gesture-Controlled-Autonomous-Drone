@@ -25,6 +25,7 @@ class Decision:
         
         most_common = max(set(self.window), key=self.window.count)
         
+        # count for most common element / current number of elements in q
         if self.window.count(most_common) / len(self.window) >= CONFIDENCE and most_common != self.last_stable:
             self.last_stable = most_common
             return GESTURE_TO_INTENT.get(most_common)
