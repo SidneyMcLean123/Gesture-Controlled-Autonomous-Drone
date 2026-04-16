@@ -10,7 +10,7 @@ class State(Enum):
 
 # Only these transitions are legal
 TRANSITIONS = {
-    State.IDLE:           [State.TAKEOFF],
+    State.IDLE:           [State.TAKEOFF, State.EMERGENCY_STOP],
     State.TAKEOFF:        [State.HOVER, State.EMERGENCY_STOP],
     State.HOVER:          [State.LAND, State.EMERGENCY_STOP],
     State.LAND:           [State.IDLE, State.EMERGENCY_STOP],
