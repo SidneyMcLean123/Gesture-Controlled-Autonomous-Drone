@@ -42,36 +42,48 @@ def test_returns_none_below_confidence_threshold(decision):
         result = decision.update("closed_fist")
     assert result is None
 
+# Early (Part 1) buffer domination test (len(self.window) < GESTURE_BUFFER_LEN)
 @pytest.mark.parametrize("n", range(int(MIN_FRAMES * CONFIDENCE)))
-# Early buffer domination test
-def test_fires_after_majority_switch(decision, n):
+def test_fires_after_majority_switch_1(decision, n):
     for _ in range(n):
         decision.update("closed_fist")
     
     # Add exactly enough to reach the 
     result = None
     
-    for _ in range((MIN_FRAMES - n)):
+    for _ in range(int(MIN_FRAMES - n)):
         result = decision.update("open_palm")
     
     assert result == "HOVER"
 
-# @pytest.mark.parametrize("n", range(GESTURE_BUFFER_LEN))
-# # Early buffer domination test
-# def test_fires_after_majority_switch(decision, n):
-#     for _ in range(n + MIN_FRAMES):
-#         decision.update("closed_fist")
+# Middle (Part 2) buffer domination test (len(self.window) < GESTURE_BUFFER_LEN)
+@pytest.mark.parametrize("n", range(int(MIN_FRAMES * CONFIDENCE), int(GESTURE_BUFFER_LEN * (1 - CONFIDENCE) + 1)))
+def test_fires_after_majority_switch_2(decision, n):
+    for _ in range(n):
+        decision.update("closed_fist")
     
-#     # Add exactly enough open_palm to dominate the buffer get >= confidence
-#     result = None
+    # Add exactly enough to reach the 
+    result = None
     
-#     for _ in range(math.ceil(1.5 * (n + MIN_FRAMES))):
-#         result = decision.update("open_palm")
+    for _ in range(math.ceil(n * 1.5)):
+        result = decision.update("open_palm")
     
-#     assert result == "HOVER"
+    assert result == "HOVER"
     
+# Later (Part 3) buffer domination test (second gesture add 9)
+@pytest.mark.parametrize("n", range(int(GESTURE_BUFFER_LEN * (1 - CONFIDENCE) + 1), GESTURE_BUFFER_LEN + 1))
+def test_fires_after_majority_switch_3(decision, n):
+    for _ in range(n):
+        decision.update("closed_fist")
     
-
+    # Add exactly enough to reach the 
+    result = None
+    
+    for _ in range(math.ceil(GESTURE_BUFFER_LEN * CONFIDENCE)):
+        result = decision.update("open_palm")
+    
+    assert result == "HOVER"
+ 
 # Test most_common != self.last_stable
 def test_does_not_repeat_same_intent(decision):
     # Get a stable gesture decision
