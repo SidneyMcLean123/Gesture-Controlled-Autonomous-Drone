@@ -21,13 +21,12 @@ def test_idle_to_takeoff(sm):
     assert result == State.TAKEOFF
 
 def test_takeoff_to_hover(sm):
-    sm.transition("TAKEOFF")
+    got_to_state(sm, "TAKEOFF")
     result = sm.transition("HOVER")
     assert result == State.HOVER
     
 def test_hover_to_land(sm):
-    sm.transition("TAKEOFF")
-    sm.transition("HOVER")
+    got_to_state(sm, "TAKEOFF", "HOVER")
     result = sm.transition("LAND")
     assert result == State.LAND
     
@@ -46,59 +45,87 @@ def test_emergency_stop_from_any_state(sm, setup_intents):
     
 # Invalid intents
 def test_invalid_intent_returns_None_in_IDLE(sm):
-    result = sm.transition("GO_CRAZY")
+    result = sm.transition("INVALID_INTENT")
     assert result is None
     
 def test_invalid_intent_does_not_change_state_in_IDLE(sm):
-    result = sm.transition("GO_CRAZY")
+    result = sm.transition("INVALID_INTENT")
     assert sm.get_state() == State.IDLE
     
 def test_invalid_intent_returns_None_in_TAKEOFF(sm):
-    sm.transition("TAKEOFF")
-    result = sm.transition("GO_CRAZY")
+    got_to_state(sm, "TAKEOFF")
+    result = sm.transition("INVALID_INTENT")
     assert result is None
     
 def test_invalid_intent_does_not_change_state_in_TAKEOFF(sm):
     sm.transition("TAKEOFF")
-    result = sm.transition("GO_CRAZY")
+    result = sm.transition("INVALID_INTENT")
     assert sm.get_state() == State.TAKEOFF
     
 def test_invalid_intent_returns_None_in_HOVER(sm):
-    sm.transition("TAKEOFF")
-    sm.transition("HOVER")
-    result = sm.transition("GO_CRAZY")
+    got_to_state(sm, "TAKEOFF", "HOVER")
+    result = sm.transition("INVALID_INTENT")
     assert result is None
     
 def test_invalid_intent_does_not_change_state_in_HOVER(sm):
-    sm.transition("TAKEOFF")
-    sm.transition("HOVER")
-    result = sm.transition("GO_CRAZY")
+    got_to_state(sm, "TAKEOFF", "HOVER")
+    result = sm.transition("INVALID_INTENT")
     assert sm.get_state() == State.HOVER
 
 def test_invalid_intent_returns_None_in_LAND(sm):
-    sm.transition("TAKEOFF")
-    sm.transition("HOVER")
-    sm.transition("LAND")
-    result = sm.transition("GO_CRAZY")
+    got_to_state(sm, "TAKEOFF", "HOVER", "LAND")
+    result = sm.transition("INVALID_INTENT")
     assert result is None
     
 def test_invalid_intent_does_not_change_state_in_LAND(sm):
-    sm.transition("TAKEOFF")
-    sm.transition("HOVER")
-    sm.transition("LAND")
-    result = sm.transition("GO_CRAZY")
+    got_to_state(sm, "TAKEOFF", "HOVER", "LAND")
+    result = sm.transition("INVALID_INTENT")
     assert sm.get_state() == State.LAND
     
-def test_invalid_intent_returns_None_in_EMERGENCY_STOP(sm):
-    got_to_state(sm, "TAKEOFF")
+def test_invalid_intent_returns_None_in_EMERGENCY_STOP_from_IDLE(sm):
     sm.transition("EMERGENCY_STOP")
-    result = sm.transition("GO_CRAZY")
+    result = sm.transition("INVALID_INTENT")
     assert result is None
 
-def test_invalid_intent_does_not_change_state_in_EMERGENCY_STOP(sm):
+def test_invalid_intent_does_not_change_state_in_EMERGENCY_STOP_from_IDLE(sm):
+    sm.transition("EMERGENCY_STOP")
+    result = sm.transition("INVALID_INTENT")
+    assert sm.get_state() == State.EMERGENCY_STOP
+    
+def test_invalid_intent_returns_None_in_EMERGENCY_STOP_from_TAKEOFF(sm):
     got_to_state(sm, "TAKEOFF")
     sm.transition("EMERGENCY_STOP")
-    result = sm.transition("GO_CRAZY")
+    result = sm.transition("INVALID_INTENT")
+    assert result is None
+
+def test_invalid_intent_does_not_change_state_in_EMERGENCY_STOP_from_TAKEOFF(sm):
+    got_to_state(sm, "TAKEOFF")
+    sm.transition("EMERGENCY_STOP")
+    result = sm.transition("INVALID_INTENT")
+    assert sm.get_state() == State.EMERGENCY_STOP
+
+def test_invalid_intent_returns_None_in_EMERGENCY_STOP_from_HOVER(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER")
+    sm.transition("EMERGENCY_STOP")
+    result = sm.transition("INVALID_INTENT")
+    assert result is None
+
+def test_invalid_intent_does_not_change_state_in_EMERGENCY_STOP_from_HOVER(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER")
+    sm.transition("EMERGENCY_STOP")
+    result = sm.transition("INVALID_INTENT")
+    assert sm.get_state() == State.EMERGENCY_STOP
+
+def test_invalid_intent_returns_None_in_EMERGENCY_STOP_from_LAND(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER", "LAND")
+    sm.transition("EMERGENCY_STOP")
+    result = sm.transition("INVALID_INTENT")
+    assert result is None
+
+def test_invalid_intent_does_not_change_state_in_EMERGENCY_STOP_from_LAND(sm):
+    got_to_state(sm, "TAKEOFF", "HOVER", "LAND")
+    sm.transition("EMERGENCY_STOP")
+    result = sm.transition("INVALID_INTENT")
     assert sm.get_state() == State.EMERGENCY_STOP
     
 # Invalid transitions
