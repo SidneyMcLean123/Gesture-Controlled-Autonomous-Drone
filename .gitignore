@@ -8,4 +8,4 @@ __pycache__/
 .env
 base_frame.jpg
 landmark_frame.jpg
-raw_gesture_data.csv
+*.csv

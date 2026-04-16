@@ -1,86 +1,43 @@
+from dronekit import VehicleMode
 import time
-from dronekit import connect, VehicleMode
 
-# dronekit commands state=LANDED and intent=TAKEOFF
-def arm_and_takeoff(vehicle, target_altitude):
-    print("Arming motors...")
-    
-    while not vehicle.is_armable:
-        print("Waiting for vehicle to initialize...")
-        time.sleep(1)
-    
-    print("Switching to GUIDED mode...")
-    vehicle.mode = VehicleMode("GUIDED")
-    vehicle.armed = True
+TARGET_ALTITUDE = 2    # in meters
 
-    while not vehicle.armed:
-        print("Waiting for arming...")
+# Arm and ascend to TARGET_ALTITUDE (where it hovers with guided)
+def handle_takeoff(vehicle):
+    if not vehicle.is_armable:
+        print("Waiting for vehicle to become armable...")
+        return
+    
+    if vehicle.mode != VehicleMode("GUIDED"):
+        vehicle.mode = VehicleMode("GUIDED")
         time.sleep(1)
 
-    print("Taking off!")
-    vehicle.simple_takeoff(target_altitude)
+    if not vehicle.armed:
+        print("Arming...")
+        vehicle.armed = True
+        while not vehicle.armed:
+            time.sleep(0.5)
+        print("Armed!")
+        vehicle.simple_takeoff(TARGET_ALTITUDE)
+        print(f"Taking off to {TARGET_ALTITUDE}m...")
 
-    # wait until altitude reached
-    while True:
-        alt = vehicle.location.global_relative_frame.alt
-        print(f"Altitude: {alt:.2f}")
-        
-        if alt >= target_altitude * 0.95:
-            print("Reached target altitude")
-            break
-        
-        time.sleep(1)
-        
-# dronekit commands state=HOVERING and intent=HOVER
-def hover_and_switch(vehicle, hover_time=10):
-    print("Switching to GUIDED mode (hover)...")
-    vehicle.mode = VehicleMode("GUIDED")
-    
-    while vehicle.mode.name != "GUIDED":
-        print("Waiting for GUIDED mode...")
-        time.sleep(1)
+# Hold position        
+def handle_hover(vehicle):
+    """Hold position — GUIDED mode with no new commands keeps the drone in place."""
+    if vehicle.mode != VehicleMode("GUIDED"):
+        vehicle.mode = VehicleMode("GUIDED")
 
-    print("Hovering...")
+# Landing sequence
+def handle_land(vehicle):
+    """Initiate landing sequence."""
+    if vehicle.mode != VehicleMode("LAND"):
+        print("Landing...")
+        vehicle.mode = VehicleMode("LAND")
 
-    start_time = time.time()
-    
-    while True:
-        alt = vehicle.location.global_relative_frame.alt
-        print(f"Hover altitude: {alt:.2f}")
-
-        # optional: time-based hover exit
-        if time.time() - start_time > hover_time:
-            print("Hover time complete")
-            break
-
-        time.sleep(1)
-        
-# dronekit commands state=HOVERING and intent=LAND        
-def land_and_disarm(vehicle):
-    print("Switching to LAND mode...")
-    vehicle.mode = VehicleMode("LAND")
-    
-    while vehicle.mode.name != "LAND":
-        print("Waiting for LAND mode...")
-        time.sleep(1)
-        
-    print("Landing...")
-    
-    while True:
-        alt = vehicle.location.global_relative_frame.alt
-        print(f"Altitude: {alt:.2f}")
-        
-        if alt <= 0.1:
-            print("Touchdown detected!")
-            break
-        
-        time.sleep(1)
-    
-    print("Disarming...")
+# Cut motors no matter the altitude
+def handle_emergency(vehicle):
+    """Cut motors immediately regardless of altitude."""
+    print("EMERGENCY STOP")
+    vehicle.mode = VehicleMode("STABILIZE")
     vehicle.armed = False
-    
-    while vehicle.armed:
-        print("Waiting for disarm...")
-        time.sleep(1)
-
-    print("Disarmed successfully.")
