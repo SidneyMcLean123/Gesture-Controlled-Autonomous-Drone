@@ -12,7 +12,7 @@ hand = mp_hands.Hands()
 current_label = "closed_fist"
 
 # csv setup for appending data capture
-with open('test_data.csv', 'a', newline='') as f:
+with open('raw_gesture_data_collection.csv', 'a', newline='') as f:
     writer = csv.writer(f)
 
     while True:

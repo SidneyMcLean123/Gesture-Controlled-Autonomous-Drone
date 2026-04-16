@@ -15,7 +15,7 @@ def got_to_state(sm, *intents):
 def test_initial_state_is_idle(sm):
     assert sm.get_state() == State.IDLE
     
-# Transitions
+# Valid Transitions
 def test_idle_to_takeoff(sm):
     result = sm.transition("TAKEOFF")
     assert result == State.TAKEOFF
