@@ -31,7 +31,7 @@ class Perception:
         return np.array(row).reshape(1,-1)
         
     def classify_landmarks(self, landmark_array):
-        if landmark_array is None:
+        if landmark_array is None or landmark_array.size == 0:
             return None
 
         prediction = self.model.predict(landmark_array, verbose=0)
