@@ -1,5 +1,7 @@
+import threading
 from enum import Enum
 from typing import Optional
+
 
 class State(Enum):
     IDLE            = 0
@@ -27,21 +29,24 @@ INTENT_TO_STATE = {
 class StateMachine:
     def __init__(self):
         self.state = State.IDLE
+        self._lock = threading.Lock()
 
     def transition(self, intent: str) -> Optional[State]:
-        target = INTENT_TO_STATE.get(intent)
+        with self._lock:
+            target = INTENT_TO_STATE.get(intent)
 
-        if target is None:
-            print(f"Unknown intent: {intent}")
-            return None
+            if target is None:
+                print(f"Unknown intent: {intent}")
+                return None
 
-        if target not in TRANSITIONS[self.state]:
-            print(f"Invalid transition: {self.state.name} -> {target.name}")
-            return None
+            if target not in TRANSITIONS[self.state]:
+                print(f"Invalid transition: {self.state.name} -> {target.name}")
+                return None
 
-        print(f"STATE: {self.state.name} -> {target.name}")
-        self.state = target
-        return self.state
+            print(f"STATE: {self.state.name} -> {target.name}")
+            self.state = target
+            return self.state
 
     def get_state(self) -> State:
-        return self.state
+        with self._lock:
+            return self.state
